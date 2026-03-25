@@ -1,0 +1,25 @@
+name: 'TF Changed Files'
+description: 'Identifies directories containing changed files in a PR, filtered by extension and ignored directories.'
+author: 'Sevenlive'
+
+inputs:
+  github_token:
+    description: 'GitHub token for authenticating API requests'
+    required: true
+    default: ${{ github.token }}
+  file_extensions:
+    description: 'Comma-separated list of file extensions to include (e.g. .ts,.js,.json)'
+    required: false
+    default: '.ts,.js,.json'
+  ignored_directories:
+    description: 'Comma-separated list of directory names to ignore (e.g. node_modules,docs,tests)'
+    required: false
+    default: 'node_modules,docs,tests'
+
+outputs:
+  changed_dirs:
+    description: 'JSON stringified array of unique directory paths containing changed files'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
