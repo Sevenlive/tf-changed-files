@@ -1,8 +1,8 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { parseCommaSeparated, filterFiles, extractUniqueDirs } from './utils';
+import { parseCommaSeparated, filterFiles, extractUniqueDirs, matchesPattern, isInIgnoredDirectory } from './utils';
 
-export { parseCommaSeparated, filterFiles, extractUniqueDirs };
+export { parseCommaSeparated, matchesPattern, isInIgnoredDirectory, filterFiles, extractUniqueDirs };
 
 async function run(): Promise<void> {
   try {

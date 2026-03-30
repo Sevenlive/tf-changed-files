@@ -1,4 +1,4 @@
-import { parseCommaSeparated, matchesPattern, filterFiles, extractUniqueDirs } from '../src/utils';
+import { parseCommaSeparated, matchesPattern, isInIgnoredDirectory, filterFiles, extractUniqueDirs } from '../src/utils';
 
 describe('parseCommaSeparated', () => {
   it('parses a comma-separated string into an array', () => {
@@ -48,6 +48,38 @@ describe('matchesPattern', () => {
   });
 });
 
+describe('isInIgnoredDirectory', () => {
+  it('matches a single-segment pattern against a top-level directory', () => {
+    expect(isInIgnoredDirectory('node_modules/pkg/main.tf', ['node_modules'])).toBe(true);
+  });
+
+  it('matches a single-segment pattern at any depth', () => {
+    expect(isInIgnoredDirectory('src/tests/unit.test.ts', ['tests'])).toBe(true);
+  });
+
+  it('does not match the filename itself', () => {
+    expect(isInIgnoredDirectory('main.tf', ['main.tf'])).toBe(false);
+  });
+
+  it('matches a multi-segment pattern exactly', () => {
+    expect(isInIgnoredDirectory('.github/workflows/ci.tf', ['.github/workflows'])).toBe(true);
+  });
+
+  it('matches a multi-segment pattern when nested deeper in the path', () => {
+    expect(isInIgnoredDirectory('repo/.github/workflows/ci.tf', ['.github/workflows'])).toBe(true);
+  });
+
+  it('does not match a partial multi-segment pattern', () => {
+    expect(isInIgnoredDirectory('.github/actions/ci.tf', ['.github/workflows'])).toBe(false);
+  });
+
+  it('supports wildcards in multi-segment patterns', () => {
+    expect(isInIgnoredDirectory('.github/workflows/ci.tf', ['.github/*'])).toBe(true);
+    expect(isInIgnoredDirectory('.github/actions/ci.tf', ['.github/*'])).toBe(true);
+  });
+});
+
+
 describe('filterFiles (wildcard ignored_directories)', () => {
   const extensions = ['.tf', '.tfvars'];
 
@@ -64,6 +96,11 @@ describe('filterFiles (wildcard ignored_directories)', () => {
   it('ignores directories matched by ? wildcard', () => {
     const files = ['v1/main.tf', 'v2/main.tf', 'v12/main.tf'];
     expect(filterFiles(files, extensions, ['v?'])).toEqual(['v12/main.tf']);
+  });
+
+  it('excludes files under a multi-segment pattern like .github/workflows', () => {
+    const files = ['.github/workflows/ci.tf', 'modules/vpc/main.tf'];
+    expect(filterFiles(files, extensions, ['.github/workflows'])).toEqual(['modules/vpc/main.tf']);
   });
 
   it('multiple patterns including wildcard all apply', () => {

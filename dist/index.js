@@ -42182,13 +42182,15 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractUniqueDirs = exports.filterFiles = exports.parseCommaSeparated = void 0;
+exports.extractUniqueDirs = exports.filterFiles = exports.isInIgnoredDirectory = exports.matchesPattern = exports.parseCommaSeparated = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const utils_1 = __nccwpck_require__(1798);
 Object.defineProperty(exports, "parseCommaSeparated", ({ enumerable: true, get: function () { return utils_1.parseCommaSeparated; } }));
 Object.defineProperty(exports, "filterFiles", ({ enumerable: true, get: function () { return utils_1.filterFiles; } }));
 Object.defineProperty(exports, "extractUniqueDirs", ({ enumerable: true, get: function () { return utils_1.extractUniqueDirs; } }));
+Object.defineProperty(exports, "matchesPattern", ({ enumerable: true, get: function () { return utils_1.matchesPattern; } }));
+Object.defineProperty(exports, "isInIgnoredDirectory", ({ enumerable: true, get: function () { return utils_1.isInIgnoredDirectory; } }));
 async function run() {
     try {
         const token = core.getInput('github_token', { required: true });
@@ -42249,6 +42251,7 @@ run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCommaSeparated = parseCommaSeparated;
 exports.matchesPattern = matchesPattern;
+exports.isInIgnoredDirectory = isInIgnoredDirectory;
 exports.filterFiles = filterFiles;
 exports.extractUniqueDirs = extractUniqueDirs;
 function parseCommaSeparated(input) {
@@ -42268,15 +42271,37 @@ function matchesPattern(pattern, str) {
         .replace(/\?/g, '[^/]');
     return new RegExp(`^${regexSource}$`).test(str);
 }
+/**
+ * Returns true when `file` lives inside a directory matching `pattern`.
+ * `pattern` may contain multiple path segments separated by `/` (e.g.
+ * `.github/workflows`), and each segment may contain `*`/`?` wildcards.
+ * Matching is checked against every consecutive sub-path of the file's
+ * directory components, so `a/b/.github/workflows/ci.tf` is correctly
+ * excluded by the pattern `.github/workflows`.
+ */
+function isInIgnoredDirectory(file, ignoredDirs) {
+    const parts = file.split('/');
+    // Only the directory portions (everything except the filename) participate.
+    const dirParts = parts.slice(0, -1);
+    return ignoredDirs.some((pattern) => {
+        const patternParts = pattern.split('/');
+        const windowSize = patternParts.length;
+        for (let i = 0; i <= dirParts.length - windowSize; i++) {
+            const window = dirParts.slice(i, i + windowSize);
+            if (window.every((seg, j) => matchesPattern(patternParts[j], seg))) {
+                return true;
+            }
+        }
+        return false;
+    });
+}
 function filterFiles(files, extensions, ignoredDirs) {
     return files.filter((file) => {
         const hasMatchingExtension = extensions.some((ext) => file.endsWith(ext));
         if (!hasMatchingExtension) {
             return false;
         }
-        const parts = file.split('/');
-        const isInIgnoredDir = ignoredDirs.some((pattern) => parts.some((segment) => matchesPattern(pattern, segment)));
-        return !isInIgnoredDir;
+        return !isInIgnoredDirectory(file, ignoredDirs);
     });
 }
 function extractUniqueDirs(files) {

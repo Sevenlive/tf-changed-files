@@ -14,7 +14,7 @@ inputs:
   ignored_directories:
     description: 'Comma-separated list of directory name patterns to ignore. Supports wildcards (* and ?) (e.g. node_modules,.terraform,*.backup)'
     required: false
-    default: 'node_modules,.terraform'
+    default: 'node_modules,.terraform,.github/workflows'
 
 outputs:
   changed_dirs:

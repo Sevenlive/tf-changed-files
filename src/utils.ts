@@ -17,6 +17,32 @@ export function matchesPattern(pattern: string, str: string): boolean {
   return new RegExp(`^${regexSource}$`).test(str);
 }
 
+/**
+ * Returns true when `file` lives inside a directory matching `pattern`.
+ * `pattern` may contain multiple path segments separated by `/` (e.g.
+ * `.github/workflows`), and each segment may contain `*`/`?` wildcards.
+ * Matching is checked against every consecutive sub-path of the file's
+ * directory components, so `a/b/.github/workflows/ci.tf` is correctly
+ * excluded by the pattern `.github/workflows`.
+ */
+export function isInIgnoredDirectory(file: string, ignoredDirs: string[]): boolean {
+  const parts = file.split('/');
+  // Only the directory portions (everything except the filename) participate.
+  const dirParts = parts.slice(0, -1);
+
+  return ignoredDirs.some((pattern) => {
+    const patternParts = pattern.split('/');
+    const windowSize = patternParts.length;
+    for (let i = 0; i <= dirParts.length - windowSize; i++) {
+      const window = dirParts.slice(i, i + windowSize);
+      if (window.every((seg, j) => matchesPattern(patternParts[j], seg))) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
 export function filterFiles(
   files: string[],
   extensions: string[],
@@ -27,12 +53,7 @@ export function filterFiles(
     if (!hasMatchingExtension) {
       return false;
     }
-
-    const parts = file.split('/');
-    const isInIgnoredDir = ignoredDirs.some((pattern) =>
-      parts.some((segment) => matchesPattern(pattern, segment))
-    );
-    return !isInIgnoredDir;
+    return !isInIgnoredDirectory(file, ignoredDirs);
   });
 }
 
