@@ -1,4 +1,4 @@
-import { parseCommaSeparated, filterFiles, extractUniqueDirs } from '../src/utils';
+import { parseCommaSeparated, matchesPattern, filterFiles, extractUniqueDirs } from '../src/utils';
 
 describe('parseCommaSeparated', () => {
   it('parses a comma-separated string into an array', () => {
@@ -17,6 +17,67 @@ describe('parseCommaSeparated', () => {
     expect(parseCommaSeparated('')).toEqual([]);
   });
 });
+
+describe('matchesPattern', () => {
+  it('matches an exact string (no wildcards)', () => {
+    expect(matchesPattern('node_modules', 'node_modules')).toBe(true);
+    expect(matchesPattern('node_modules', 'node_modules_extra')).toBe(false);
+  });
+
+  it('* matches any sequence of characters within a segment', () => {
+    expect(matchesPattern('*.backup', 'prod.backup')).toBe(true);
+    expect(matchesPattern('*.backup', 'backup')).toBe(false);
+    expect(matchesPattern('test-*', 'test-unit')).toBe(true);
+    expect(matchesPattern('test-*', 'test-integration')).toBe(true);
+    expect(matchesPattern('test-*', 'unit')).toBe(false);
+  });
+
+  it('? matches exactly one character', () => {
+    expect(matchesPattern('v?', 'v1')).toBe(true);
+    expect(matchesPattern('v?', 'v12')).toBe(false);
+    expect(matchesPattern('v?', 'v')).toBe(false);
+  });
+
+  it('* does not cross a / boundary', () => {
+    expect(matchesPattern('a*', 'a/b')).toBe(false);
+  });
+
+  it('handles patterns with regex special characters', () => {
+    expect(matchesPattern('.terraform', '.terraform')).toBe(true);
+    expect(matchesPattern('.terraform', 'xterraform')).toBe(false);
+  });
+});
+
+describe('filterFiles (wildcard ignored_directories)', () => {
+  const extensions = ['.tf', '.tfvars'];
+
+  it('ignores directories matching a wildcard pattern', () => {
+    const files = ['envs/prod.backup/main.tf', 'modules/vpc/main.tf'];
+    expect(filterFiles(files, extensions, ['*.backup'])).toEqual(['modules/vpc/main.tf']);
+  });
+
+  it('ignores .terraform hidden directories', () => {
+    const files = ['.terraform/providers/main.tf', 'modules/vpc/main.tf'];
+    expect(filterFiles(files, extensions, ['.terraform'])).toEqual(['modules/vpc/main.tf']);
+  });
+
+  it('ignores directories matched by ? wildcard', () => {
+    const files = ['v1/main.tf', 'v2/main.tf', 'v12/main.tf'];
+    expect(filterFiles(files, extensions, ['v?'])).toEqual(['v12/main.tf']);
+  });
+
+  it('multiple patterns including wildcard all apply', () => {
+    const files = [
+      'node_modules/pkg/main.tf',
+      'envs/staging.backup/main.tf',
+      'modules/vpc/main.tf',
+    ];
+    expect(filterFiles(files, extensions, ['node_modules', '*.backup'])).toEqual([
+      'modules/vpc/main.tf',
+    ]);
+  });
+});
+
 
 describe('filterFiles', () => {
   const extensions = ['.ts', '.js', '.json'];

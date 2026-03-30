@@ -5,6 +5,18 @@ export function parseCommaSeparated(input: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+/**
+ * Returns true when `str` matches `pattern`, where `*` matches any sequence
+ * of characters and `?` matches any single character (neither crosses a `/`).
+ */
+export function matchesPattern(pattern: string, str: string): boolean {
+  const regexSource = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]');
+  return new RegExp(`^${regexSource}$`).test(str);
+}
+
 export function filterFiles(
   files: string[],
   extensions: string[],
@@ -17,7 +29,9 @@ export function filterFiles(
     }
 
     const parts = file.split('/');
-    const isInIgnoredDir = ignoredDirs.some((dir) => parts.includes(dir));
+    const isInIgnoredDir = ignoredDirs.some((pattern) =>
+      parts.some((segment) => matchesPattern(pattern, segment))
+    );
     return !isInIgnoredDir;
   });
 }

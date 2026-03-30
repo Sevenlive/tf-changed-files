@@ -8,13 +8,13 @@ inputs:
     required: true
     default: ${{ github.token }}
   file_extensions:
-    description: 'Comma-separated list of file extensions to include (e.g. .ts,.js,.json)'
+    description: 'Comma-separated list of file extensions to include (e.g. .tf,.tfvars,.hcl)'
     required: false
-    default: '.ts,.js,.json'
+    default: '.tf,.tfvars,.hcl'
   ignored_directories:
-    description: 'Comma-separated list of directory names to ignore (e.g. node_modules,docs,tests)'
+    description: 'Comma-separated list of directory name patterns to ignore. Supports wildcards (* and ?) (e.g. node_modules,.terraform,*.backup)'
     required: false
-    default: 'node_modules,docs,tests'
+    default: 'node_modules,.terraform'
 
 outputs:
   changed_dirs:

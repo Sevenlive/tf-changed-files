@@ -42248,6 +42248,7 @@ run();
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseCommaSeparated = parseCommaSeparated;
+exports.matchesPattern = matchesPattern;
 exports.filterFiles = filterFiles;
 exports.extractUniqueDirs = extractUniqueDirs;
 function parseCommaSeparated(input) {
@@ -42256,6 +42257,17 @@ function parseCommaSeparated(input) {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 }
+/**
+ * Returns true when `str` matches `pattern`, where `*` matches any sequence
+ * of characters and `?` matches any single character (neither crosses a `/`).
+ */
+function matchesPattern(pattern, str) {
+    const regexSource = pattern
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '[^/]*')
+        .replace(/\?/g, '[^/]');
+    return new RegExp(`^${regexSource}$`).test(str);
+}
 function filterFiles(files, extensions, ignoredDirs) {
     return files.filter((file) => {
         const hasMatchingExtension = extensions.some((ext) => file.endsWith(ext));
@@ -42263,7 +42275,7 @@ function filterFiles(files, extensions, ignoredDirs) {
             return false;
         }
         const parts = file.split('/');
-        const isInIgnoredDir = ignoredDirs.some((dir) => parts.includes(dir));
+        const isInIgnoredDir = ignoredDirs.some((pattern) => parts.some((segment) => matchesPattern(pattern, segment)));
         return !isInIgnoredDir;
     });
 }
