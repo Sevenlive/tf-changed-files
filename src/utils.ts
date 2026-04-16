@@ -36,16 +36,7 @@ export function isInIgnoredDirectory(file: string, ignoredDirs: string[]): boole
       return false;
     }
 
-    // Treat trailing `/*` as "this directory tree", so users can write
-    // `a/b/*` to ignore everything under `a/b`.
-    const treePattern = normalizedPattern.endsWith('/*')
-      ? normalizedPattern.slice(0, -2)
-      : normalizedPattern;
-    if (!treePattern) {
-      return false;
-    }
-
-    const patternParts = treePattern.split('/');
+    const patternParts = normalizedPattern.split('/');
     const windowSize = patternParts.length;
     for (let i = 0; i <= dirParts.length - windowSize; i++) {
       const window = dirParts.slice(i, i + windowSize);

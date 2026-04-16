@@ -78,9 +78,9 @@ describe('isInIgnoredDirectory', () => {
     expect(isInIgnoredDirectory('.github/actions/ci.tf', ['.github/*'])).toBe(true);
   });
 
-  it('treats trailing /* as an ignore for the whole subtree', () => {
+  it('/* ignores subdirectories but not files directly in the parent dir', () => {
     const pattern = 'thsas/Azure/azure_bigip/*';
-    expect(isInIgnoredDirectory('thsas/Azure/azure_bigip/main.tf', [pattern])).toBe(true);
+    expect(isInIgnoredDirectory('thsas/Azure/azure_bigip/main.tf', [pattern])).toBe(false);
     expect(isInIgnoredDirectory('thsas/Azure/azure_bigip/env1/main.tf', [pattern])).toBe(true);
     expect(isInIgnoredDirectory('thsas/Azure/azure_bigip/env1/dev/main.tf', [pattern])).toBe(true);
   });
@@ -110,7 +110,7 @@ describe('filterFiles (wildcard ignored_directories)', () => {
     expect(filterFiles(files, extensions, ['.github/workflows'])).toEqual(['modules/vpc/main.tf']);
   });
 
-  it('excludes entire subtree for patterns ending in /*', () => {
+  it('excludes subdirs for patterns ending in /* but keeps files directly in the parent', () => {
     const files = [
       'thsas/Azure/azure_bigip/main.tf',
       'thsas/Azure/azure_bigip/env1/main.tf',
@@ -118,6 +118,7 @@ describe('filterFiles (wildcard ignored_directories)', () => {
       'modules/vpc/main.tf',
     ];
     expect(filterFiles(files, extensions, ['thsas/Azure/azure_bigip/*'])).toEqual([
+      'thsas/Azure/azure_bigip/main.tf',
       'modules/vpc/main.tf',
     ]);
   });
