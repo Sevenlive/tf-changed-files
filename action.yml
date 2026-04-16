@@ -1,0 +1,25 @@
+name: 'TF Changed Files'
+description: 'Identifies directories containing changed files in a PR, filtered by extension and ignored directories.'
+author: 'Sevenlive'
+
+inputs:
+  github_token:
+    description: 'GitHub token for authenticating API requests'
+    required: true
+    default: ${{ github.token }}
+  file_extensions:
+    description: 'Comma-separated list of file extensions to include (e.g. .tf,.tfvars,.hcl)'
+    required: false
+    default: '.tf,.tfvars,.hcl'
+  ignored_directories:
+    description: 'Comma-separated list of directory name patterns to ignore. Supports wildcards (* and ?) (e.g. node_modules,.terraform,*.backup)'
+    required: false
+    default: 'node_modules,.terraform,.github/workflows'
+
+outputs:
+  changed_dirs:
+    description: 'JSON stringified array of unique directory paths containing changed files'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
